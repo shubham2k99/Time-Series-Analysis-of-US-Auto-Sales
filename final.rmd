@@ -1,0 +1,468 @@
+setwd("C:/Users/saiak/OneDrive/Desktop/time series")
+US_Autosales <- read.csv("US Autosales.csv", sep=",")
+attach(US_Autosales)
+head(US_Autosales)
+
+n_Autosales <- Autosales[1:288]
+n_MONTH <- Month[1:288]
+n_Inflation <- Inflation[1:288]
+n_Unemploy <- Unemploy[1:288]
+n_PPI <- PPI[1:288]
+n_Gasprices <- GasPrices[1:288]
+
+plot.ts(Autosales,col="blue")
+acf(Autosales, lag.max = 96)
+
+boxplot(Autosales/1000~Month,xlab="Month",ylab="Autosales in (000s)",col="blue")
+
+boxplot(n_Autosales/1000~n_MONTH,xlab="Month",ylab="Autosales in (000s)",col="blue")
+
+
+time <- seq(1, length(n_Autosales))
+
+dummy1=rep(0,length(n_Autosales))
+dummy2=rep(0,length(n_Autosales))
+
+
+for (i in 1:length(n_Autosales)){
+  if (time[i]>168 & time[i]<241) dummy1[i]=1 else dummy1[i]=0
+  if (time[i]>241) dummy2[i]=1 else dummy2[i]=0
+}
+
+int1=dummy1*time
+int2=dummy2*time
+
+fitn <- lm(n_Autosales ~ time + as.factor(n_MONTH) + dummy1 + dummy2 + int1 + int2)
+summary(fitn)
+
+
+#CREATING DUMMY VARIABLES
+n=length(Autosales)
+m1=rep(0,n)
+m2=rep(0,n)
+m3=rep(0,n)
+m4=rep(0,n)
+m5=rep(0,n)
+m6=rep(0,n)
+m7=rep(0,n)
+m8=rep(0,n)
+m9=rep(0,n)
+m10=rep(0,n)
+m11=rep(0,n)
+m12=rep(0,n)
+
+
+for (i in 1:n){
+  if (Month[i]==1) m1[i]=1 else m1[i]=0
+  if (Month[i]==2) m2[i]=1 else m2[i]=0
+  if (Month[i]==3) m3[i]=1 else m3[i]=0
+  if (Month[i]==4) m4[i]=1 else m4[i]=0
+  if (Month[i]==5) m5[i]=1 else m5[i]=0
+  if (Month[i]==6) m6[i]=1 else m6[i]=0
+  if (Month[i]==7) m7[i]=1 else m7[i]=0
+  if (Month[i]==8) m8[i]=1 else m8[i]=0
+  if (Month[i]==9) m9[i]=1 else m9[i]=0
+  if (Month[i]==10) m10[i]=1 else m10[i]=0
+  if (Month[i]==11) m11[i]=1 else m11[i]=0
+  if (Month[i]==12) m12[i]=1 else m12[i]=0
+}
+
+
+#model with dummies and trend
+# Fitting the linear model with interaction terms
+fitn <- lm(n_Autosales ~ time + as.factor(n_MONTH) + dummy1*time + dummy2*time)
+summary(fitn)
+
+acf(residuals(fitn),lag=36)
+pacf(residuals(fitn),lag=36)
+
+
+
+##
+#Cyclical Models
+install.packages('TSA')
+library(TSA)
+time1<- seq(1, length(n_Autosales))
+detrend<-lm(n_Autosales~time1)
+prdgrm=periodogram(detrend$residuals,col="blue")
+frequency=prdgrm$freq
+amplitude=prdgrm$spec
+period=1/prdgrm$freq
+all=cbind(period,frequency,amplitude)
+all
+
+
+par(mfrow=c(1,2))
+periodogram(detrend$residuals,col="blue")
+plot(period,prdgrm$spec, type="h",col="blue",ylab="Peridogram",lwd=2)
+
+all <- cbind(Harmonic = 1:nrow(all), all)
+all_ordered <- all[order(-all[,4]),]
+print(all_ordered)
+
+n=length(n_Autosales)
+
+cos2=cos(2*pi*(2/n)*time1)
+sin2=sin(2*pi*(2/n)*time1)
+cos3=cos(2*pi*(3/n)*time1)
+sin3=sin(2*pi*(3/n)*time1)
+cos4=cos(2*pi*(4/n)*time1)
+sin4=sin(2*pi*(4/n)*time1)
+cos24=cos(2*pi*(24/n)*time1)
+sin24=sin(2*pi*(24/n)*time1)
+cos96=cos(2*pi*(96/n)*time1)
+sin96=sin(2*pi*(96/n)*time1)
+cos120=cos(2*pi*(120/n)*time1)
+sin120=sin(2*pi*(120/n)*time1)
+
+fit3 <- lm(n_Autosales ~ time1 + cos2 + sin2 + sin3 + cos3 + sin4 + cos4 + sin24 + cos24 + sin96 + cos96 + cos120 + sin120)
+summary(fit3)
+
+acf(residuals(fit3),main = "Cyclical Residuals",lag=60)
+pacf(residuals(fit3),main = "Cyclical Residuals",lag=60)
+
+time_n=c(289:312)
+cos2_n=cos(2*pi*(2/n)*time_n)
+sin2_n=sin(2*pi*(2/n)*time_n)
+
+cos3_n=cos(2*pi*(3/n)*time_n)
+sin3_n=sin(2*pi*(3/n)*time_n)
+
+cos4_n=cos(2*pi*(4/n)*time_n)
+sin4_n=sin(2*pi*(4/n)*time_n)
+
+cos24_n=cos(2*pi*(24/n)*time_n)
+sin24_n=sin(2*pi*(24/n)*time_n)
+
+cos96_n=cos(2*pi*(96/n)*time_n)
+sin96_n=sin(2*pi*(96/n)*time_n)
+
+cos120_n=cos(2*pi*(120/n)*time_n)
+sin120_n=sin(2*pi*(120/n)*time_n)
+
+
+pred = predict(fit3, data.frame(time1=time_n,cos2=cos2_n,sin2=sin2_n,cos3=cos3_n,sin3=sin3_n,
+                            cos4=cos4_n,sin4=sin4_n,cos24=cos24_n,sin24=sin24_n, cos96=cos96_n,sin96=sin96_n, cos120=cos120_n,sin120=sin120_n))                
+
+MAPE=mean(abs(Autosales[289:312]-pred)/irc[289:312] )
+MAPE
+```
+
+
+
+##
+
+#4.1
+
+
+acf(residuals(fitn),main = 'Trend & Seasonality', lag=36)
+pacf(residuals(fitn),main = 'Trend & Seasonality',lag=36)
+
+
+library(forecast)
+x=cbind(time,m2[1:288],m3[1:288],m4[1:288],m5[1:288],m6[1:288],m7[1:288],m8[1:288],m9[1:288],m10[1:288],m11[1:288],m12[1:288], dummy1, dummy2, int1, int2)
+fit41 <- Arima(n_Autosales, order = c(1,0,0), xreg = x)
+summary(fit41)
+
+phi=fit41$coef
+se_phi=rep(0,14)
+se_phi[1]=(fit41$var.coef[1,1])^0.5
+se_phi[2]=(fit41$var.coef[2,2])^0.5
+se_phi[3]=(fit41$var.coef[3,3])^0.5
+se_phi[4]=(fit41$var.coef[4,4])^0.5
+se_phi[5]=(fit41$var.coef[5,5])^0.5
+se_phi[6]=(fit41$var.coef[6,6])^0.5
+se_phi[7]=(fit41$var.coef[7,7])^0.5
+se_phi[8]=(fit41$var.coef[8,8])^0.5
+se_phi[9]=(fit41$var.coef[9,9])^0.5
+se_phi[10]=(fit41$var.coef[10,10])^0.5
+se_phi[11]=(fit41$var.coef[11,11])^0.5
+se_phi[12]=(fit41$var.coef[12,12])^0.5
+se_phi[13]=(fit41$var.coef[13,13])^0.5
+se_phi[14]=(fit41$var.coef[14,14])^0.5
+
+t_stat=abs(phi)/se_phi
+t_stat
+
+par(mfrow=c(1,2))
+acf(fit41$residuals,main = "ACF from Residuals of AR(1)",col="red",lag=48)
+pacf(fit41$residuals,main = "PACF from Residuals of AR(1)",col="red",lag=48)
+
+holdfit41 =Arima(holdShare,model=fit41, xreg = x)
+accuracy(holdfit41)
+
+preds41 = fitted(fit41)
+plot.ts(n_Autosales, col ="blue",type = "b", lwd=2)
+lines(preds41,col="red",lwd=2)
+
+Box.test(fit41$residuals,type=c("Box-Pierce"),lag=36)
+
+
+#4.3
+US_Autosales <- read.csv("US Autosales.csv", sep=",")
+attach(US_Autosales)
+head(US_Autosales)
+
+n_Autosales <- Autosales[1:288]
+n_MONTH <- Month[1:288]
+n_Inflation <- Inflation[1:288]
+n_Unemploy <- Unemploy[1:288]
+n_PPI <- PPI[1:288]
+n_Gasprices <- GasPrices[1:288]
+
+#acf(n_Autosales, lag=36)
+#pacf(n_Autosales, lag=36)
+
+ns_diff <- Arima(n_Autosales, order=c(0,1,0))
+ns_diff
+
+acf(residuals(ns_diff),main  = "Non-seasonal differencing", lag=32)
+pacf(residuals(ns_diff),main = "Non-seasonal differencing", lag=32)
+
+
+d_diff <- Arima(n_Autosales, order=c(0,1,0), seasonal = list(order=c(0,1,0),period =12))
+d_diff
+
+acf(residuals(d_diff), main = "Non-seasonal & Seasonal differencing",lag=32)
+pacf(residuals(d_diff), main = "Non-seasonal & Seasonal differencing",lag=32)
+
+
+sarima <- Arima(n_Autosales, order = c(0,1,1), seasonal = list(order=c(0,1,1),period =12), lambda = 0)
+summary(sarima)
+
+phi=sarima$coef
+se_phi=rep(0,2)
+se_phi[1]=(sarima$var.coef[1,1])^0.5
+se_phi[2]=(sarima$var.coef[2,2])^0.5
+
+t_stat=abs(phi)/se_phi
+t_stat
+
+acf(residuals(sarima), lag=32)
+pacf(residuals(sarima), lag=32)
+
+
+preds43 = fitted(sarima)
+plot.ts(n_Autosales, col ="blue",type = "b", lwd=2)
+lines(preds43,col="red",lwd=2)
+
+
+trainShare= Autosales[289:312]
+holdShare= Autosales[289:312]
+
+
+# accuracy measures for the training sample
+
+accuracy(sarima)
+
+
+# accuracy measures for hold out sample
+
+holdfit=Arima(holdShare,model=sarima)
+accuracy(holdfit)
+
+
+`
+
+```{r}
+### INTERACTIONS
+# Creating the dummy variables and interaction terms
+dummy1=rep(0,length(n_Autosales))
+dummy2=rep(0,length(n_Autosales))
+for (i in 1:length(n_Autosales)){
+  if (time[i]>168 & time[i]<241) dummy1[i]=1 else dummy1[i]=0
+  if (time[i]>241) dummy2[i]=1 else dummy2[i]=0
+}
+
+
+# Fitting the linear model with interaction terms
+fit2_1 <- lm(n_Autosales ~ time+ as.factor(n_MONTH) + dummy1*time + dummy2*time)
+
+# Summary of the updated model
+summary(fit2_1)
+
+# Plotting actual versus predicted autosales
+plot.ts(n_Autosales / 1000, main = "Actual versus Predicted Autosales", ylab = "Autosales in K", col = "blue")
+lines(predict(fit2_1) / 1000, col = "red")
+
+# Residuals
+acf(residuals(fit2_1), lag = 35, col = "red")
+
+acf(diff(residuals(fit2_1), lag = 35, col = "red"))
+
+
+# Predictions for the training data
+pred3_=predict(fit2_1, data.frame(n_MONTH=Month[1:288],time=c(1:288)), interval="prediction")
+
+mape3_t=mean(abs(Autosales[1:288]-pred3_[,1])/Autosales[1:288])
+
+mape3_t
+
+# Predictions for the test data
+
+pred3=predict(fit2_1, data.frame(n_MONTH=Month[289:312],time=c(289:312)), interval="prediction")
+
+mape3=mean(abs(Autosales[289:312]-pred3[,1])/Autosales[289:312])
+
+mape3
+
+
+
+setwd("/Users/abhijit/Desktop/MSBA/Spring 2024 Semester/Time Series Forecastng_DNSC_6319/Project")
+
+# Section 3.3
+
+df<-read.csv("US Autosales.csv", header=TRUE)
+attach(df)
+head(df)
+
+autosales_ts=ts(data=Autosales,start=c(1995,1),end=c(2020,1),frequency=12)
+
+ts.plot(autosales_ts,col="red",lwd=2,ylab="Autosales",main="Monthly Autosales in US Jan 1995-Dec 2020") 
+
+boxplot(autosales_ts/1000~cycle(autosales_ts), xlab="Month", ylab="Autosales in US Jan 1995-Dec 2020")
+
+acf(autosales_ts,col="blue")
+
+diff_autosales_ts<-diff(autosales_ts,lag=1)
+
+ts.plot(diff_autosales_ts, col="red",lwd=2)
+
+acf(diff_autosales_ts)
+
+Box.test(diff_autosales_ts,type=c("Box-Pierce"),lag=24)
+
+newdata<-cbind(Autosales,Inflation,Unemploy,PPI,GasPrices)
+
+pairs(newdata,lower.panel=NULL,col="blue")
+cor(newdata)
+
+
+Inflation_ts=ts(data=Inflation,start=c(1995,1),end=c(2020,1),frequency=12)
+Unemploy_ts=ts(data=Unemploy,start=c(1995,1),end=c(2020,1),frequency=12)
+PPI_ts=ts(data=PPI,start=c(1995,1),end=c(2020,1),frequency=12)
+GasPrices_ts=ts(data=GasPrices,start=c(1995,1),end=c(2020,1),frequency=12)
+
+
+par(mfrow=c(5,1),mar=c(2,4,1,0))
+plot.ts(autosales_ts,lwd=2)
+plot.ts(Inflation_ts,lwd=2)
+plot.ts(Unemploy_ts,lwd=2)
+plot.ts(PPI_ts,lwd=2)
+plot.ts(GasPrices_ts,lwd=2)
+
+n_Autosales=Autosales[1:288]
+n_Inflation=Inflation[1:288]
+n_Unemploy=Unemploy[1:288]
+n_PPI=PPI[1:288]
+n_GasPrices=GasPrices[1:288]
+
+
+# MLR: PPI, Unemployment, GasPrices and Inflation
+
+mlrfit<-lm(n_Autosales~n_PPI+n_Unemploy+n_GasPrices+n_Inflation)
+summary(mlrfit)
+
+par(mfrow=c(1,1))
+ts.plot(n_Autosales,lwd=2,ylab="Actual versus predicted values of Autosales")
+lines(predict(mlrfit),col="red",lwd=2)
+
+pred_train<-predict(mlrfit)
+
+mape_train=mean(abs(n_Autosales-pred_train)/n_Autosales)
+mape_train*100
+
+pred<-predict(mlrfit,data.frame(n_Autosales=Autosales[289:312],n_PPI=PPI[289:312],n_Unemploy=Unemploy[289:312],n_GasPrices=GasPrices[289:312],n_Inflation=Inflation[289:312]))
+
+mape=mean(abs(Autosales[289:312]-pred)/Autosales[289:312])
+mape
+
+res=residuals(mlrfit)
+par(mfrow=c(1,1))
+acf(res,col="red",lag=36)
+title(main = "ACF of Regression Residuals")
+
+install.packages("car")
+library(car)
+
+vif(mlrfit)
+
+# Section 4.2
+
+# From Section 3.3
+par(mfrow=c(1,2))
+acf(res,col="red",lag=36,ylim=c(-0.5,1))
+title(main = "ACF of Regression Residuals")
+pacf(res,col="red",lag=36,ylim=c(-0.5,1))
+title(main = "PACF of Regression Residuals")
+
+par(mfrow=c(1,2))
+acf(diff(res),col="red",lag=36,ylim=c(-0.5,1))
+title(main = "ACF of Residuals after Non-Seasonal Differencing")
+pacf(diff(res),col="red",lag=36,ylim=c(-0.5,1))
+title(main = "PACF of Residuals after Non-Seasonal Differencing")
+
+acf(diff(diff(res),lag=12),col="red",lag=36,ylim=c(-0.5,1))
+title(main = "ACF of Residuals after Non-Seasonal & Seasonal Differencing")
+pacf(diff(diff(res),lag=12),col="red",lag=36,ylim=c(-0.5,1))
+title(main = "PACF of Residuals after Non-Seasonal & Seasonal Differencing")
+
+
+
+x=cbind(n_Inflation,n_Unemploy,n_PPI,n_GasPrices)
+season=arima(n_Autosales, order = c(0, 0, 0), xreg=x, seasonal=list(order=c(0,1,0),period=12))
+summary(season)
+
+par(mfrow=c(1,2))
+acf(season$residuals,col="red",lag=36)
+title(main = "ACF of De-seasonalized Regression Residuals")
+pacf(regdif$residuals,col="red",lag=36)
+title(main = "PACF of De-seasonalized Regression Residuals")
+
+library(forecast)
+x=cbind(n_Inflation,n_Unemploy,n_PPI,n_GasPrices)
+regdif=Arima(n_Autosales, order = c(0, 1, 1), xreg=x, seasonal=list(order=c(0,1,1),period=12))
+summary(regdif)
+phi=regdif$coef
+se_phi=rep(0,6)
+se_phi[1]=(regdif$var.coef[1,1])^0.5
+se_phi[2]=(regdif$var.coef[2,2])^0.5
+se_phi[3]=(regdif$var.coef[3,3])^0.5
+se_phi[4]=(regdif$var.coef[4,4])^0.5
+se_phi[5]=(regdif$var.coef[5,5])^0.5
+se_phi[6]=(regdif$var.coef[6,6])^0.5
+
+t_stat=abs(phi)/se_phi
+t_stat
+
+par(mfrow=c(1,1))
+acf(regdif$residuals,col="red",lag=36)
+title(main = "ACF of Residuals of Corrected Model")
+
+
+x1=cbind(Inflation[289:312],Unemploy[289:312],PPI[289:312],GasPrices[289:312])
+
+
+regdif_holdour<-Arima(Autosales[289:312], model = regdif, xreg = x1)
+summary(regdif_holdour)
+
+acf(fit4$resid,col="blue", lag=36)
+pacf(fit4$residuals, lag=36)
+
+Box.test(fit4$resid,lag=36) 
+
+preds=fitted(fit4)
+plot.ts(n_Autosales,col="blue")
+lines(preds,col="red")
+
+cor(n_Autosales,preds)^2
+
+accuracy(fit4)
+
+
+fit4_holdout<-Arima(n_Autosales,lambda = 0, order = c(0,1,1),xreg = x1, seasonal =list(order=c(0,1,1),period =12))
+summary(fit4)
+
+
+
+
